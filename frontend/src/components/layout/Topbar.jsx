@@ -7,8 +7,11 @@ import { useRouter } from 'next/navigation';
 
 export function Topbar() {
     const { user } = useAppSelector((state) => state.auth);
+    const { rawMaterials } = useAppSelector((state) => state.inventory);
     const dispatch = useAppDispatch();
     const router = useRouter();
+
+    const alertCount = rawMaterials.filter(m => m.currentStock <= m.minStockLevel).length;
 
     const handleLogout = () => {
         dispatch(logout());
@@ -35,9 +38,14 @@ export function Topbar() {
                     {/* In future, this will be a dropdown to switch outlets */}
                 </div>
 
-                <button className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors">
+                <button
+                    onClick={() => router.push('/dashboard/alerts')}
+                    className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
                     <Bell className="w-5 h-5" />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                    {alertCount > 0 && (
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                    )}
                 </button>
 
                 <button
