@@ -12,36 +12,78 @@ const initialState = {
 };
 
 // --- Async Thunks ---
-export const fetchInventoryData = createAsyncThunk(
-    'inventory/fetchAll',
+// --- Async Thunks ---
+export const fetchProducts = createAsyncThunk(
+    'inventory/fetchProducts',
     async (_, { rejectWithValue }) => {
         try {
-            const [unitsRes, materialsRes, logsRes, productsRes, recipesRes] = await Promise.all([
-                inventoryApi.getUnits(),
-                inventoryApi.getMaterials(),
-                inventoryApi.getStockLogs(),
-                inventoryApi.getProducts(),
-                inventoryApi.getRecipes()
-            ]);
-            // Assuming Backend returns arrays directly or { data: [] }
-            return {
-                units: unitsRes.data || [],
-                rawMaterials: materialsRes.data || [],
-                stockLogs: logsRes.data || [],
-                products: productsRes.data || [],
-                recipes: recipesRes.data || []
-            };
+            const res = await inventoryApi.getProducts();
+            return res.data;
         } catch (err) {
-            console.error('Fetch Error:', err);
-            return rejectWithValue(err.response?.data?.message || 'Failed to fetch inventory data');
+            return rejectWithValue(err.response?.data?.message || 'Failed to fetch products');
         }
-        console.log('Fetched Data:', {
-            units: unitsRes.data,
-            rawMaterials: materialsRes.data,
-            stockLogs: logsRes.data,
-            products: productsRes.data,
-            recipes: recipesRes.data
-        });
+    }
+);
+
+export const fetchRawMaterials = createAsyncThunk(
+    'inventory/fetchRawMaterials',
+    async (_, { rejectWithValue }) => {
+        try {
+            const res = await inventoryApi.getMaterials();
+            return res.data;
+        } catch (err) {
+            return rejectWithValue(err.response?.data?.message || 'Failed to fetch raw materials');
+        }
+    }
+);
+
+export const fetchStockLogs = createAsyncThunk(
+    'inventory/fetchStockLogs',
+    async (params = {}, { rejectWithValue }) => {
+        try {
+            const res = await inventoryApi.getStockLogs(params);
+            return res.data;
+        } catch (err) {
+            return rejectWithValue(err.response?.data?.message || 'Failed to fetch stock logs');
+        }
+    }
+);
+
+export const fetchUnits = createAsyncThunk(
+    'inventory/fetchUnits',
+    async (_, { rejectWithValue }) => {
+        try {
+            const res = await inventoryApi.getUnits();
+            return res.data;
+        } catch (err) {
+            return rejectWithValue(err.response?.data?.message || 'Failed to fetch units');
+        }
+    }
+);
+
+export const fetchRecipes = createAsyncThunk(
+    'inventory/fetchRecipes',
+    async (_, { rejectWithValue }) => {
+        try {
+            const res = await inventoryApi.getRecipes();
+            return res.data;
+        } catch (err) {
+            return rejectWithValue(err.response?.data?.message || 'Failed to fetch recipes');
+        }
+    }
+);
+
+export const fetchInventoryData = createAsyncThunk(
+    'inventory/fetchAll',
+    async (_, { dispatch }) => {
+        await Promise.all([
+            dispatch(fetchUnits()),
+            dispatch(fetchRawMaterials()),
+            dispatch(fetchProducts()),
+            dispatch(fetchRecipes()),
+            dispatch(fetchStockLogs({ limit: 50 })) // Default to recent 50 logs
+        ]);
+        return {}; // No payload needed as individual thunks update state
     }
 );
 
@@ -211,22 +253,35 @@ export const inventorySlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            // Fetch All
+            // Fetch Individual
+            .addCase(fetchProducts.fulfilled, (state, action) => {
+                state.products = action.payload || [];
+            })
+            .addCase(fetchRawMaterials.fulfilled, (state, action) => {
+                state.rawMaterials = action.payload || [];
+            })
+            .addCase(fetchStockLogs.fulfilled, (state, action) => {
+                // If fetching with filters, might want to append or replace. For now replace.
+                state.stockLogs = action.payload || [];
+            })
+            .addCase(fetchUnits.fulfilled, (state, action) => {
+                state.units = action.payload || [];
+            })
+            .addCase(fetchRecipes.fulfilled, (state, action) => {
+                state.recipes = action.payload || [];
+            })
+
+            // Composite Fetch (Optional: just handles loading state)
             .addCase(fetchInventoryData.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchInventoryData.fulfilled, (state, action) => {
+            .addCase(fetchInventoryData.fulfilled, (state) => {
                 state.loading = false;
-                state.units = action.payload.units || [];
-                state.rawMaterials = action.payload.rawMaterials || [];
-                state.stockLogs = action.payload.stockLogs || [];
-                state.products = action.payload.products || [];
-                state.recipes = action.payload.recipes || [];
             })
             .addCase(fetchInventoryData.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload;
+                state.error = action.error.message;
             })
             // Raw Materials
             .addCase(addRawMaterial.fulfilled, (state, action) => {

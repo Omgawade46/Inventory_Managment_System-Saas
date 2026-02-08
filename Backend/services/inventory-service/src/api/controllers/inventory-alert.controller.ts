@@ -21,7 +21,8 @@ export const getAlerts = async (req: Request, res: Response) => {
 export const acknowledgeAlert = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { userId } = req.body; // In real auth, get from req.user
+        //@ts-ignore
+        const userId = req.user?.id;
 
         const alert = await prisma.inventoryAlert.update({
             where: { id },

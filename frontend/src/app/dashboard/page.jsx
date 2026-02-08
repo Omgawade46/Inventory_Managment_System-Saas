@@ -1,13 +1,20 @@
 'use client';
 
-import { useAppSelector } from '@/redux/hooks';
+import { useAppSelector, useAppDispatch } from '@/redux/hooks';
+import { fetchInventoryData } from '@/redux/features/inventorySlice';
 import AlertsWidget from '@/components/alerts/AlertsWidget';
 import { Package, TrendingUp, AlertTriangle, DollarSign } from 'lucide-react';
 import RoleGuard from '@/components/auth/RoleGuard';
+import { useEffect } from 'react';
 
 export default function DashboardPage() {
+    const dispatch = useAppDispatch();
     const { rawMaterials, stockLogs, units } = useAppSelector((state) => state.inventory);
     const { user } = useAppSelector((state) => state.auth);
+
+    useEffect(() => {
+        dispatch(fetchInventoryData());
+    }, [dispatch]);
 
     // Metrics Calculation
     const totalItems = rawMaterials.length;

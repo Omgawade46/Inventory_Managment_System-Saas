@@ -221,7 +221,7 @@ export default function RawMaterialManager() {
                                 )}
                             </div>
 
-                            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                            <div className="absolute top-4 right-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex gap-2">
                                 <button
                                     onClick={() => startEdit(material)}
                                     className="p-2 bg-white text-blue-600 shadow-md rounded-lg hover:bg-blue-50"

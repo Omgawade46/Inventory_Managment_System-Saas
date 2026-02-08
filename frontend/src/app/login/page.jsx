@@ -18,8 +18,13 @@ export default function LoginPage() {
         setError('');
 
         try {
-            await dispatch(login({ email, password })).unwrap();
-            router.push('/dashboard');
+            const user = await dispatch(login({ email, password })).unwrap();
+
+            if (user.role === 'CHEF') {
+                router.push('/kitchen');
+            } else {
+                router.push('/dashboard');
+            }
         } catch (err) {
             setError(err || 'Login failed');
         }
@@ -38,7 +43,7 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50">
-            <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100">
                 <div className="text-center mb-8">
                     <div className="bg-blue-600 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-200">
                         <Store className="text-white w-6 h-6" />
@@ -103,6 +108,16 @@ export default function LoginPage() {
                             className="flex-1 text-xs text-slate-500 hover:text-blue-600 underline"
                         >
                             Fill Manager Credentials
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setEmail('chef@example.com');
+                                setPassword('password123');
+                            }}
+                            className="flex-1 text-xs text-slate-500 hover:text-blue-600 underline"
+                        >
+                            Fill Chef Credentials
                         </button>
                     </div>
                 </div>

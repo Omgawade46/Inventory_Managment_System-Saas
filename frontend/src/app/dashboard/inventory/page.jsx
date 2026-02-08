@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAppDispatch } from '@/redux/hooks';
-import { fetchInventoryData } from '@/redux/features/inventorySlice';
+import { fetchRawMaterials, fetchUnits } from '@/redux/features/inventorySlice';
 import RawMaterialManager from '@/components/inventory/RawMaterialManager';
 import RoleGuard from '@/components/auth/RoleGuard';
 import Link from 'next/link';
@@ -12,7 +12,8 @@ export default function InventoryPage() {
     const dispatch = useAppDispatch();
 
     useEffect(() => {
-        dispatch(fetchInventoryData());
+        dispatch(fetchRawMaterials());
+        dispatch(fetchUnits());
     }, [dispatch]);
 
     return (

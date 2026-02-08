@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAppDispatch } from '@/redux/hooks';
-import { fetchInventoryData } from '@/redux/features/inventorySlice';
+import { fetchRecipes, fetchProducts, fetchRawMaterials, fetchUnits } from '@/redux/features/inventorySlice';
 import RecipeBuilder from '@/components/recipes/RecipeBuilder';
 import RoleGuard from '@/components/auth/RoleGuard';
 
@@ -10,7 +10,10 @@ export default function RecipesPage() {
     const dispatch = useAppDispatch();
 
     useEffect(() => {
-        dispatch(fetchInventoryData());
+        dispatch(fetchRecipes());
+        dispatch(fetchProducts());
+        dispatch(fetchRawMaterials());
+        dispatch(fetchUnits());
     }, [dispatch]);
 
     return (

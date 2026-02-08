@@ -106,7 +106,7 @@ export const createStockLog = async (req: Request, res: Response) => {
 
 export const getStockLogs = async (req: Request, res: Response) => {
     try {
-        const { rawMaterialId, changeType } = req.query;
+        const { rawMaterialId, changeType, limit, page } = req.query;
         const userOutletId = req.user?.outletId;
 
         const whereClause: any = {};
@@ -118,9 +118,14 @@ export const getStockLogs = async (req: Request, res: Response) => {
             whereClause.outletId = userOutletId;
         }
 
+        const take = limit ? Number(limit) : undefined;
+        const skip = (page && limit) ? (Number(page) - 1) * Number(limit) : undefined;
+
         const logs = await prisma.stockLog.findMany({
             where: whereClause,
             orderBy: { createdAt: 'desc' },
+            take,
+            skip,
             include: {
                 rawMaterial: true,
                 unit: true,

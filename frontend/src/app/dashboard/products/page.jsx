@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAppDispatch } from '@/redux/hooks';
-import { fetchInventoryData } from '@/redux/features/inventorySlice';
+import { fetchProducts } from '@/redux/features/inventorySlice';
 import ProductManager from '@/components/inventory/ProductManager';
 import RoleGuard from '@/components/auth/RoleGuard';
 
@@ -10,7 +10,7 @@ export default function ProductsPage() {
     const dispatch = useAppDispatch();
 
     useEffect(() => {
-        dispatch(fetchInventoryData());
+        dispatch(fetchProducts());
     }, [dispatch]);
 
     return (

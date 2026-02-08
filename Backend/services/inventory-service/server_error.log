@@ -1,0 +1,52 @@
+2026-02-02T08:49:46.469Z - POST /recipes Error: 
+Invalid `tx.recipe.create()` invocation in
+D:\Saas\Backend\services\inventory-service\src\api\controllers\recipe.controller.ts:19:51
+
+  16 // Use transaction to create Recipe and Ingredients together
+  17 const recipe = await prisma.$transaction(async (tx) => {
+  18     // 1. Create Recipe
+→ 19     const createdRecipe = await tx.recipe.create(
+Foreign key constraint violated: `recipes_created_by_fkey (index)`
+Stack: PrismaClientKnownRequestError: 
+Invalid `tx.recipe.create()` invocation in
+D:\Saas\Backend\services\inventory-service\src\api\controllers\recipe.controller.ts:19:51
+
+  16 // Use transaction to create Recipe and Ingredients together
+  17 const recipe = await prisma.$transaction(async (tx) => {
+  18     // 1. Create Recipe
+→ 19     const createdRecipe = await tx.recipe.create(
+Foreign key constraint violated: `recipes_created_by_fkey (index)`
+    at $n.handleRequestError (D:\Saas\Backend\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\Saas\Backend\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\Saas\Backend\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\Saas\Backend\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async D:\Saas\Backend\services\inventory-service\src\api\controllers\recipe.controller.ts:19:35
+    at async Proxy._transactionWithCallback (D:\Saas\Backend\node_modules\@prisma\client\runtime\library.js:130:8000)
+    at async createRecipe (D:\Saas\Backend\services\inventory-service\src\api\controllers\recipe.controller.ts:17:24)
+2026-02-02T08:50:07.811Z - GET /products Error: 
+Invalid `prisma.product.findMany()` invocation in
+D:\Saas\Backend\services\inventory-service\src\api\controllers\product.controller.ts:46:47
+
+  43     whereClause.outletId = userOutletId;
+  44 }
+  45 
+→ 46 const products = await prisma.product.findMany(
+Can't reach database server at `ep-spring-rice-aheeg4zw-pooler.c-3.us-east-1.aws.neon.tech:5432`
+
+Please make sure your database server is running at `ep-spring-rice-aheeg4zw-pooler.c-3.us-east-1.aws.neon.tech:5432`.
+Stack: PrismaClientKnownRequestError: 
+Invalid `prisma.product.findMany()` invocation in
+D:\Saas\Backend\services\inventory-service\src\api\controllers\product.controller.ts:46:47
+
+  43     whereClause.outletId = userOutletId;
+  44 }
+  45 
+→ 46 const products = await prisma.product.findMany(
+Can't reach database server at `ep-spring-rice-aheeg4zw-pooler.c-3.us-east-1.aws.neon.tech:5432`
+
+Please make sure your database server is running at `ep-spring-rice-aheeg4zw-pooler.c-3.us-east-1.aws.neon.tech:5432`.
+    at $n.handleRequestError (D:\Saas\Backend\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\Saas\Backend\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\Saas\Backend\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\Saas\Backend\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async getProducts (D:\Saas\Backend\services\inventory-service\src\api\controllers\product.controller.ts:46:26)

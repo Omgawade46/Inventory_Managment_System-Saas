@@ -2,17 +2,25 @@
 
 import { useAppSelector } from '@/redux/hooks';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Topbar } from '@/components/layout/Topbar';
 
 export default function DashboardLayout({ children }) {
     const { isAuthenticated } = useAppSelector((state) => state.auth);
     const router = useRouter();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         if (!isAuthenticated) {
             router.push('/login');
+            return;
+        }
+
+        // Redirect Chefs to their dedicated dashboard
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user?.role === 'CHEF') {
+            router.push('/kitchen');
         }
     }, [isAuthenticated, router]);
 
@@ -22,13 +30,25 @@ export default function DashboardLayout({ children }) {
 
     return (
         <div className="min-h-screen bg-slate-50">
-            <Sidebar />
-            <Topbar />
-            <main className="pl-64 pt-16 min-h-screen">
-                <div className="p-8 max-w-7xl mx-auto">
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+            <Topbar onMenuClick={() => setIsSidebarOpen(true)} />
+
+            <main className={`
+                pt-16 min-h-screen transition-all duration-300
+                ${isSidebarOpen ? 'md:pl-64' : 'pl-0 md:pl-64'} 
+            `}>
+                <div className="p-4 md:p-8 max-w-7xl mx-auto">
                     {children}
                 </div>
             </main>
+
+            {/* Mobile Overlay */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-slate-900/50 z-40 md:hidden backdrop-blur-sm"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
         </div>
     );
 }

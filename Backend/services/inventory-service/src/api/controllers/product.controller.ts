@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import { prisma } from '../../infrastructure/db';
 import { Prisma } from '@prisma/client';
+import { StockService } from '../services/stock.service';
 
 export const createProduct = async (req: Request, res: Response) => {
     try {
-        const { name, sellingPrice, outletId } = req.body;
+        const { name, sellingPrice, outletId, kitchenCategoryId, category } = req.body;
         const userOutletId = req.user?.outletId;
 
         if (!name) {
@@ -18,7 +19,9 @@ export const createProduct = async (req: Request, res: Response) => {
             data: {
                 name,
                 sellingPrice,
-                outletId: finalOutletId
+                outletId: finalOutletId,
+                kitchenCategoryId,
+                category
             },
         });
         res.status(201).json(product);
@@ -40,7 +43,7 @@ export const getProducts = async (req: Request, res: Response) => {
 
         const products = await prisma.product.findMany({
             where: whereClause,
-            include: { recipes: true, outlet: true }
+            include: { recipes: true, outlet: true, kitchenCategory: true }
         });
         res.json(products);
     } catch (error) {
@@ -51,14 +54,15 @@ export const getProducts = async (req: Request, res: Response) => {
 export const updateProduct = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { name, category, sellingPrice } = req.body;
+        const { name, category, sellingPrice, kitchenCategoryId } = req.body;
 
         const product = await prisma.product.update({
             where: { id },
             data: {
                 name,
                 category,
-                sellingPrice
+                sellingPrice,
+                kitchenCategoryId
             }
         });
         res.json(product);
@@ -202,176 +206,39 @@ export const deductStockForSale = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Quantity must be greater than 0' });
         }
 
-        // Get the product with its active recipe
-        const product = await prisma.product.findUnique({
-            where: { id: productId, isActive: true },
-            include: {
-                recipes: {
-                    where: { isLocked: true },
-                    include: {
-                        ingredients: {
-                            include: {
-                                rawMaterial: true,
-                                unit: true
-                            }
-                        }
-                    },
-                    take: 1,
-                    orderBy: { version: 'desc' }
-                }
-            }
-        });
 
-        if (!product) {
-            return res.status(404).json({ error: 'Product not found or inactive' });
-        }
+        try {
+            const result = await StockService.deductStockForProduct(
+                productId,
+                saleQty,
+                outletId,
+                performedBy,
+                orderId
+            );
 
-        if (!product.recipes || product.recipes.length === 0) {
-            return res.status(400).json({ error: 'Product has no recipe defined' });
-        }
-
-        const recipe = product.recipes[0];
-
-        // First, check availability
-        const availabilityCheck = await prisma.$transaction(async (tx) => {
-            const unavailableIngredients: Array<{
-                rawMaterialId: string;
-                rawMaterialName: string;
-                required: number;
-                available: number;
-            }> = [];
-
-            for (const ingredient of recipe.ingredients) {
-                if (!ingredient.rawMaterialId || !ingredient.rawMaterial) {
-                    continue;
-                }
-
-                const material = await tx.rawMaterial.findUnique({
-                    where: { id: ingredient.rawMaterialId }
+            if (!result.success) {
+                return res.status(400).json({
+                    error: result.error,
+                    unavailableIngredients: result.unavailableIngredients
                 });
-
-                if (!material) continue;
-
-                const requiredQty = Number(ingredient.quantity) * saleQty;
-                const yieldLoss = Number(ingredient.yieldLossPercent || 0) / 100;
-                const adjustedRequiredQty = requiredQty * (1 + yieldLoss);
-                const availableStock = Number(material.currentStock || 0);
-
-                if (availableStock < adjustedRequiredQty) {
-                    unavailableIngredients.push({
-                        rawMaterialId: material.id,
-                        rawMaterialName: material.name,
-                        required: adjustedRequiredQty,
-                        available: availableStock
-                    });
-                }
             }
 
-            return unavailableIngredients;
-        });
-
-        if (availabilityCheck.length > 0) {
-            return res.status(400).json({
-                error: 'Insufficient inventory for this sale',
-                unavailableIngredients: availabilityCheck
+            res.status(200).json({
+                success: true,
+                productId,
+                quantitySold: saleQty,
+                deductions: result.updatedMaterials,
+                message: `Stock deducted successfully`
             });
+
+        } catch (e: any) {
+            // Handle known errors from service
+            if (e.message.includes('Product not found') || e.message.includes('has no recipe')) {
+                return res.status(400).json({ error: e.message });
+            }
+            throw e;
         }
 
-        // Proceed with stock deduction
-        const result = await prisma.$transaction(async (tx) => {
-            const stockLogs = [];
-            const updatedMaterials = [];
-
-            for (const ingredient of recipe.ingredients) {
-                if (!ingredient.rawMaterialId || !ingredient.rawMaterial) {
-                    continue;
-                }
-
-                const requiredQty = Number(ingredient.quantity) * saleQty;
-                const yieldLoss = Number(ingredient.yieldLossPercent || 0) / 100;
-                const adjustedRequiredQty = requiredQty * (1 + yieldLoss);
-                const deductionQty = -Math.abs(adjustedRequiredQty); // Negative for deduction
-
-                // Create stock log
-                const log = await tx.stockLog.create({
-                    data: {
-                        rawMaterialId: ingredient.rawMaterialId,
-                        changeQuantity: deductionQty,
-                        changeType: 'SALE',
-                        reason: `Automatic deduction for ${saleQty} unit(s) of ${product.name}`,
-                        referenceId: orderId || null,
-                        outletId: outletId || null,
-                        unitId: ingredient.unitId || null,
-                        performedBy
-                    }
-                });
-
-                // Update stock
-                const material = await tx.rawMaterial.update({
-                    where: { id: ingredient.rawMaterialId },
-                    data: {
-                        currentStock: { increment: deductionQty }
-                    }
-                });
-
-                // Check for low stock alert
-                const currentStock = material.currentStock || new Prisma.Decimal(0);
-                if (material.minStockLevel && currentStock.toNumber() <= material.minStockLevel.toNumber()) {
-                    const existingAlert = await tx.inventoryAlert.findFirst({
-                        where: {
-                            rawMaterialId: material.id,
-                            status: 'ACTIVE',
-                            alertType: 'LOW_STOCK'
-                        }
-                    });
-
-                    if (!existingAlert) {
-                        await tx.inventoryAlert.create({
-                            data: {
-                                rawMaterialId: material.id,
-                                alertType: 'LOW_STOCK',
-                                currentValue: currentStock,
-                                threshold: material.minStockLevel,
-                                status: 'ACTIVE'
-                            }
-                        });
-                    } else {
-                        await tx.inventoryAlert.update({
-                            where: { id: existingAlert.id },
-                            data: { currentValue: currentStock }
-                        });
-                    }
-                } else {
-                    // Auto-resolve if stock > threshold
-                    if (material.minStockLevel && currentStock.toNumber() > material.minStockLevel.toNumber()) {
-                        await tx.inventoryAlert.updateMany({
-                            where: { rawMaterialId: material.id, status: 'ACTIVE', alertType: 'LOW_STOCK' },
-                            data: { status: 'ACKNOWLEDGED' }
-                        });
-                    }
-                }
-
-                stockLogs.push(log);
-                updatedMaterials.push({
-                    rawMaterialId: material.id,
-                    rawMaterialName: material.name,
-                    deducted: Math.abs(deductionQty),
-                    newStock: Number(material.currentStock)
-                });
-            }
-
-            return { stockLogs, updatedMaterials };
-        });
-
-        res.status(200).json({
-            success: true,
-            productId: product.id,
-            productName: product.name,
-            quantitySold: saleQty,
-            orderId: orderId || null,
-            deductions: result.updatedMaterials,
-            message: `Stock deducted successfully for ${saleQty} unit(s) of ${product.name}`
-        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to deduct stock for sale' });

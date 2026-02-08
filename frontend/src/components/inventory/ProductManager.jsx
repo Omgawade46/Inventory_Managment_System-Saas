@@ -1,18 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Ensure useEffect is here
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Plus, Search, Package, Edit2, Trash2, Tag, DollarSign } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { addProduct, deleteProduct, updateProduct } from '@/redux/features/inventorySlice';
+import { inventoryApi } from '@/services/api'; // Added import here
 
 // Schema
 const productSchema = z.object({
     name: z.string().min(1, 'Name is required'),
     category: z.string().min(1, 'Category is required'),
     sellingPrice: z.number().min(0, 'Price must be positive'),
+    kitchenCategoryId: z.string().optional(), // Added validation
 });
 
 export default function ProductManager() {
@@ -23,9 +25,28 @@ export default function ProductManager() {
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [kitchenCategories, setKitchenCategories] = useState([]);
+
+    const { messages } = useAppSelector((state) => state.inventory);
 
     const isOwner = user?.role === 'OWNER';
     const canManage = user?.role === 'OWNER' || user?.role === 'MANAGER';
+
+    useEffect(() => {
+        const loadCategories = async () => {
+            try {
+                const res = await inventoryApi.getKitchenCategories();
+                setKitchenCategories(res.data);
+            } catch (err) {
+                console.error('Failed to load kitchen categories', err);
+            }
+        };
+        if (canManage) {
+            loadCategories();
+        }
+    }, [canManage]);
+
+
 
     const {
         register,
@@ -63,6 +84,7 @@ export default function ProductManager() {
         setValue('name', product.name);
         setValue('category', product.category);
         setValue('sellingPrice', product.sellingPrice);
+        setValue('kitchenCategoryId', product.kitchenCategoryId || '');
         setIsAdding(true);
     };
 
@@ -130,6 +152,20 @@ export default function ProductManager() {
                                 />
                                 {errors.sellingPrice && <p className="text-xs text-red-500 mt-1">{errors.sellingPrice.message}</p>}
                             </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Kitchen Station</label>
+                                <select
+                                    {...register('kitchenCategoryId')}
+                                    className="form-input w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-white"
+                                >
+                                    <option value="">-- No Station --</option>
+                                    {kitchenCategories.map(cat => (
+                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-slate-400 mt-1">Controls where orders for this item are sent.</p>
+                            </div>
                         </div>
 
                         <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
@@ -175,7 +211,7 @@ export default function ProductManager() {
                         </div>
 
                         {canManage && (
-                            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                            <div className="absolute top-4 right-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex gap-2">
                                 <button
                                     onClick={() => startEdit(product)}
                                     className="p-2 bg-white text-blue-600 shadow-md rounded-lg hover:bg-blue-50"

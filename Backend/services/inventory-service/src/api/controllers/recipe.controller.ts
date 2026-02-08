@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../../infrastructure/db';
 
+
 export const createRecipe = async (req: Request, res: Response) => {
     try {
         const { productId, ingredients, version, createdBy } = req.body;

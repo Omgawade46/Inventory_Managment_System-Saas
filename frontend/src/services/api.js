@@ -36,7 +36,7 @@ export const inventoryApi = {
     deleteMaterial: (id) => api.delete(`/raw-materials/${id}`),
 
     // Stock
-    getStockLogs: () => api.get('/stock-logs'),
+    getStockLogs: (params) => api.get('/stock-logs', { params }),
     addStockLog: (data) => api.post('/stock-logs', data),
 
     // Products
@@ -50,6 +50,21 @@ export const inventoryApi = {
     createRecipe: (data) => api.post('/recipes', data),
     updateRecipe: (id, data) => api.put(`/recipes/${id}`, data),
     deleteRecipe: (id) => api.delete(`/recipes/${id}`),
+
+    // Kitchen
+    getKitchenCategories: () => api.get('/kitchen/categories'),
+    createKitchenCategory: (data) => api.post('/kitchen/categories', data),
+    assignChefToCategory: (data) => api.post('/kitchen/assign', data),
+    getKitchenQueue: () => api.get('/kitchen/queue'),
+    updateItemStatus: (id, status) => api.patch(`/kitchen/items/${id}/status`, { status }),
+
+    // Staff
+    getReadyItems: () => api.get('/staff/ready-items'),
+    markItemServed: (id) => api.patch(`/staff/items/${id}/served`),
+
+    // Orders (POS)
+    createOrder: (data) => api.post('/orders', data),
+    getOrders: () => api.get('/orders'),
 };
 
 export default api;

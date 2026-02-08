@@ -8,6 +8,8 @@ import { productRouter } from './api/routes/product.routes';
 import { recipeRouter } from './api/routes/recipe.routes';
 import { stockLogRouter } from './api/routes/stock-log.routes';
 import { inventoryAlertRouter } from './api/routes/inventory-alert.routes';
+import { kitchenRouter } from './api/routes/kitchen.routes';
+import { orderRouter } from './api/routes/order.routes';
 import { authRouter } from './api/routes/auth.routes';
 import { authenticateJWT } from './api/middlewares/jwt.middleware';
 import cors from 'cors';
@@ -32,6 +34,8 @@ app.use('/api', authenticateJWT, productRouter);
 app.use('/api', authenticateJWT, recipeRouter);
 app.use('/api', authenticateJWT, stockLogRouter);
 app.use('/api', authenticateJWT, inventoryAlertRouter);
+app.use('/api', authenticateJWT, kitchenRouter);
+app.use('/api', authenticateJWT, orderRouter);
 
 
 // app.use(errorHandler);

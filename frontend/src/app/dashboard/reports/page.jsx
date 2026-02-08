@@ -5,8 +5,18 @@ import InventoryValueChart from '@/components/reports/InventoryValueChart';
 import StockMovementChart from '@/components/reports/StockMovementChart';
 import WastageReport from '@/components/reports/WastageReport';
 import { FileBarChart } from 'lucide-react';
+import { useEffect } from 'react';
+import { useAppDispatch } from '@/redux/hooks';
+import { fetchStockLogs, fetchRawMaterials } from '@/redux/features/inventorySlice';
 
 export default function ReportsPage() {
+    const dispatch = useAppDispatch();
+
+    useEffect(() => {
+        dispatch(fetchRawMaterials());
+        dispatch(fetchStockLogs());
+    }, [dispatch]);
+
     return (
         <RoleGuard allowedRoles={['OWNER', 'MANAGER']}>
             <div className="space-y-6">

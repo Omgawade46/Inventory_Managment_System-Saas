@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Package, ChefHat, BarChart3, Settings, ShieldAlert, ShoppingBag } from 'lucide-react';
+import { LayoutDashboard, Package, ChefHat, BarChart3, Settings, ShieldAlert, ShoppingBag, X } from 'lucide-react';
 import { useAppSelector } from '@/redux/hooks';
 
 const navItems = [
@@ -13,22 +13,39 @@ const navItems = [
     { name: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
     { name: 'Alerts', href: '/dashboard/alerts', icon: ShieldAlert },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+    // Standalone Apps
+    { name: 'POS Terminal', href: '/pos', icon: ShoppingBag }, // External Layout
+    { name: 'Kitchen Display', href: '/kitchen', icon: ChefHat }, // External Layout
+    { name: 'Waiter View', href: '/staff/ready-items', icon: Package }, // External Layout
 ];
 
-export function Sidebar() {
+export function Sidebar({ isOpen, onClose }) {
     const pathname = usePathname();
     const { user } = useAppSelector((state) => state.auth);
 
     return (
-        <aside className="w-64 bg-slate-900 h-screen fixed left-0 top-0 overflow-y-auto z-50 text-slate-300">
-            <div className="p-6 border-b border-slate-800">
-                <h1 className="text-xl font-bold text-white tracking-tight">
-                    SaaS<span className="text-blue-500">Inventory</span>
-                </h1>
-                <p className="text-xs text-slate-500 mt-1">{user?.role || 'Guest'} View</p>
+        <aside className={`
+            fixed top-0 left-0 h-full w-64 bg-slate-900 text-slate-300 z-50 
+            transform transition-transform duration-300 ease-in-out
+            ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
+            md:translate-x-0
+        `}>
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+                <div>
+                    <h1 className="text-xl font-bold text-white tracking-tight">
+                        SaaS<span className="text-blue-500">Inventory</span>
+                    </h1>
+                    <p className="text-xs text-slate-500 mt-1">{user?.role || 'Guest'} View</p>
+                </div>
+                <button
+                    onClick={onClose}
+                    className="md:hidden text-slate-400 hover:text-white transition-colors"
+                >
+                    <X className="w-6 h-6" />
+                </button>
             </div>
 
-            <div className="px-4 py-6">
+            <div className="px-4 py-6 overflow-y-auto h-[calc(100vh-140px)]">
                 <nav className="space-y-1">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href;
@@ -36,6 +53,7 @@ export function Sidebar() {
                             <Link
                                 key={item.name}
                                 href={item.href}
+                                onClick={() => onClose && window.innerWidth < 768 && onClose()}
                                 className={`
                   flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
                   ${isActive

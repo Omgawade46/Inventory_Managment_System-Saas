@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Scale, ChevronRight, Settings, Info } from 'lucide-react';
 import ProfileSettings from '@/components/settings/ProfileSettings';
+import KitchenSettings from '@/components/settings/KitchenSettings';
 import RoleGuard from '@/components/auth/RoleGuard';
 import { useAppSelector } from '@/redux/hooks';
 
@@ -30,6 +31,13 @@ export default function SettingsPage() {
 
                 {/* Right Column: App Settings */}
                 <div className="lg:col-span-2 space-y-6">
+                    {/* Kitchen Setup */}
+                    {isOwner && (
+                        <div className="mb-6">
+                            <KitchenSettings />
+                        </div>
+                    )}
+
                     {/* Administration Section */}
                     {isOwner && (
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
